@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/services/odoo_crm_service.dart';
-import '../../authentication/providers/auth_provider.dart';
 
 class ScheduleCallScreen extends StatefulWidget {
   const ScheduleCallScreen({super.key});

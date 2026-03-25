@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_widgets.dart';
@@ -7,6 +9,28 @@ import '../providers/profile_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  static const _prefsPrefix = 'crm.settings.';
+
+  Future<Map<String, String>> _loadCrmSettingSummary() async {
+    final prefs = await SharedPreferences.getInstance();
+    final notificationsEnabled =
+        (prefs.getBool('${_prefsPrefix}email_notifications') ?? true) ||
+        (prefs.getBool('${_prefsPrefix}push_notifications') ?? true);
+    final syncEnabled = prefs.getBool('${_prefsPrefix}real_time_sync') ?? true;
+    final syncInterval =
+        prefs.getString('${_prefsPrefix}sync_interval') ?? '30s';
+    final pipelineView =
+        prefs.getString('${_prefsPrefix}pipeline_view') ?? 'Kanban';
+
+    return {
+      'notifications': notificationsEnabled
+          ? 'All activities & mentions'
+          : 'Disabled',
+      'sync': syncEnabled ? 'Enabled (every $syncInterval)' : 'Disabled',
+      'pipelineView': '$pipelineView (Default)',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,31 +112,44 @@ class ProfileScreen extends StatelessWidget {
 
                   _animateWidget(
                     delay: 2,
-                    child: ProfileMenuCard(
-                      title: 'CRM Settings',
-                      items: [
-                        ProfileMenuItem(
-                          icon: Icons.notifications_none_rounded,
-                          label: 'Notifications',
-                          subtitle: 'All activities & mentions',
-                          iconColor: Colors.blue,
-                          onTap: () {},
-                        ),
-                        ProfileMenuItem(
-                          icon: Icons.sync_rounded,
-                          label: 'Real-time Sync',
-                          subtitle: 'Enabled (Last 30s ago)',
-                          iconColor: Colors.green,
-                          onTap: () {},
-                        ),
-                        ProfileMenuItem(
-                          icon: Icons.filter_list_rounded,
-                          label: 'Pipeline View',
-                          subtitle: 'Kanban (Default)',
-                          iconColor: Colors.orange,
-                          onTap: () {},
-                        ),
-                      ],
+                    child: FutureBuilder<Map<String, String>>(
+                      future: _loadCrmSettingSummary(),
+                      builder: (context, snapshot) {
+                        final summary =
+                            snapshot.data ??
+                            const {
+                              'notifications': 'All activities & mentions',
+                              'sync': 'Enabled (every 30s)',
+                              'pipelineView': 'Kanban (Default)',
+                            };
+                        return ProfileMenuCard(
+                          title: 'CRM Settings',
+                          items: [
+                            ProfileMenuItem(
+                              icon: Icons.notifications_none_rounded,
+                              label: 'Notifications',
+                              subtitle: summary['notifications'] ?? 'Disabled',
+                              iconColor: Colors.blue,
+                              onTap: () => context.go('/pipeline?tab=settings'),
+                            ),
+                            ProfileMenuItem(
+                              icon: Icons.sync_rounded,
+                              label: 'Real-time Sync',
+                              subtitle: summary['sync'] ?? 'Disabled',
+                              iconColor: Colors.green,
+                              onTap: () => context.go('/pipeline?tab=settings'),
+                            ),
+                            ProfileMenuItem(
+                              icon: Icons.filter_list_rounded,
+                              label: 'Pipeline View',
+                              subtitle:
+                                  summary['pipelineView'] ?? 'Kanban (Default)',
+                              iconColor: Colors.orange,
+                              onTap: () => context.go('/pipeline?tab=settings'),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/api_service.dart';
 
@@ -62,11 +63,7 @@ class AuthProvider with ChangeNotifier {
     String url,
     String db,
   ) async {
-    String formattedUrl = url.trim();
-    if (!formattedUrl.startsWith('http://') &&
-        !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://$formattedUrl';
-    }
+    final formattedUrl = AppConfig.normalizeServerUrl(url);
 
     _status = AuthStatus.loading;
     notifyListeners();

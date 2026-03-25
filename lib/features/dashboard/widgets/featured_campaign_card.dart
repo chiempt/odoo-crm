@@ -24,8 +24,8 @@ class FeaturedCampaignCard extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.1),
-              Colors.black.withOpacity(0.7),
+              Colors.black.withValues(alpha: 0.1),
+              Colors.black.withValues(alpha: 0.7),
             ],
           ),
         ),
@@ -71,7 +71,7 @@ class FeaturedCampaignCard extends StatelessWidget {
                 Text(
                   'Sept 15-20 • 45 active leads',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                 ),

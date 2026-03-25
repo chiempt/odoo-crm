@@ -84,7 +84,7 @@ class DealProvider with ChangeNotifier {
   Future<bool> createDeal(Map<String, dynamic> values) async {
     try {
       values['type'] = 'opportunity'; // Ensure it's an opportunity
-      final id = await _crmService.createLead(values);
+      await _crmService.createLead(values);
       await fetchDeals(refresh: true);
       return true;
     } catch (e) {

@@ -1,18 +1,27 @@
-# myapp
+# Odoo CRM App (Flutter)
 
-A new Flutter project.
+Mobile-first CRM client for Odoo JSON-RPC.
 
-## Getting Started
+## Run locally
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run \
+  --dart-define=ODOO_DEFAULT_URL=https://your-odoo.example.com \
+  --dart-define=ODOO_DEFAULT_DB=odoo_prod \
+  --dart-define=ODOO_REQUIRE_HTTPS=true
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Runtime config
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Use `--dart-define` values at build/run time:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# odoo-crm
-# odoo-crm
+- `ODOO_DEFAULT_URL`: prefilled login URL.
+- `ODOO_DEFAULT_DB`: default database when auto-listing DBs is disabled.
+- `ODOO_REQUIRE_HTTPS`: `true` by default. Set to `false` only for local/dev HTTP.
+
+## Integration and release docs
+
+- Odoo API integration details: [`ODOO_CRM_INTEGRATION.md`](./ODOO_CRM_INTEGRATION.md)
+- Launch checklist: [`docs/release-checklist.md`](./docs/release-checklist.md)
+- Go/No-Go recommendation: [`docs/go-no-go.md`](./docs/go-no-go.md)

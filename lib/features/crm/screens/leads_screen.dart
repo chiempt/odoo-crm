@@ -162,9 +162,8 @@ class _LeadsScreenState extends State<LeadsScreen> {
           final res = await Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const CreateLeadScreen()),
           );
-          if (res == true && mounted) {
-            context.read<CrmProvider>().fetchLeads();
-          }
+          if (!context.mounted || res != true) return;
+          context.read<CrmProvider>().fetchLeads();
         },
         backgroundColor: _primaryColor,
         child: const Icon(Icons.add, color: Colors.white),

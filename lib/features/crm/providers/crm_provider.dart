@@ -211,12 +211,13 @@ class CrmProvider with ChangeNotifier {
         // Map 1-5 starts to Odoo priority '0', '1', '2', '3'
         // This mapping depends on Odoo version/config, usually it's 0, 1, 2, 3
         String p = "0";
-        if (_currentPriority! > 4)
+        if (_currentPriority! > 4) {
           p = "3";
-        else if (_currentPriority! > 2)
+        } else if (_currentPriority! > 2) {
           p = "2";
-        else if (_currentPriority! > 1)
+        } else if (_currentPriority! > 1) {
           p = "1";
+        }
         domain.add(["priority", "=", p]);
       }
 

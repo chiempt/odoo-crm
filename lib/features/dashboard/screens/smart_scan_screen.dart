@@ -89,7 +89,7 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFEADDFF),
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF6750A4).withOpacity(0.1), width: 10),
+        border: Border.all(color: const Color(0xFF6750A4).withValues(alpha: 0.1), width: 10),
       ),
       child: const Center(
         child: Icon(
@@ -155,7 +155,7 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
 
   Future<void> _handleScan(BuildContext context, SmartScanProvider provider, ImageSource source) async {
     await provider.scanBusinessCard(source);
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     if (provider.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(

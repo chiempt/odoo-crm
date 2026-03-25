@@ -961,7 +961,7 @@ class _DropdownField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       validator: validator,
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _Tokens.label),

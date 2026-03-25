@@ -20,10 +20,13 @@ class CrmSettingsScreen extends StatefulWidget {
 class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
   bool _emailNotifications = true;
   bool _pushNotifications = true;
+  bool _realTimeSync = true;
   bool _leadAssignment = false;
   bool _dealUpdates = true;
   String _currency = 'USD';
   String _dateFormat = 'MM/DD/YYYY';
+  String _syncInterval = '30s';
+  String _pipelineView = 'Kanban';
 
   @override
   void initState() {
@@ -43,11 +46,16 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
           prefs.getBool('${_prefsPrefix}email_notifications') ?? true;
       _pushNotifications =
           prefs.getBool('${_prefsPrefix}push_notifications') ?? true;
-      _leadAssignment = prefs.getBool('${_prefsPrefix}lead_assignment') ?? false;
+      _realTimeSync = prefs.getBool('${_prefsPrefix}real_time_sync') ?? true;
+      _leadAssignment =
+          prefs.getBool('${_prefsPrefix}lead_assignment') ?? false;
       _dealUpdates = prefs.getBool('${_prefsPrefix}deal_updates') ?? true;
       _currency = prefs.getString('${_prefsPrefix}currency') ?? 'USD';
       _dateFormat =
           prefs.getString('${_prefsPrefix}date_format') ?? 'MM/DD/YYYY';
+      _syncInterval = prefs.getString('${_prefsPrefix}sync_interval') ?? '30s';
+      _pipelineView =
+          prefs.getString('${_prefsPrefix}pipeline_view') ?? 'Kanban';
     });
   }
 
@@ -70,10 +78,13 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
       'settings': {
         'emailNotifications': _emailNotifications,
         'pushNotifications': _pushNotifications,
+        'realTimeSync': _realTimeSync,
         'leadAssignment': _leadAssignment,
         'dealUpdates': _dealUpdates,
         'currency': _currency,
         'dateFormat': _dateFormat,
+        'syncInterval': _syncInterval,
+        'pipelineView': _pipelineView,
       },
       'analyticsSnapshot': {
         'leadCount': crm.leads.length,
@@ -83,7 +94,9 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
       },
     };
 
-    await Clipboard.setData(ClipboardData(text: const JsonEncoder.withIndent('  ').convert(payload)));
+    await Clipboard.setData(
+      ClipboardData(text: const JsonEncoder.withIndent('  ').convert(payload)),
+    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('CRM data snapshot copied to clipboard')),
@@ -92,15 +105,18 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
 
   Future<void> _clearLocalCache() async {
     final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().where((k) => k.startsWith(_prefsPrefix));
+    final keys = prefs
+        .getKeys()
+        .where((k) => k.startsWith(_prefsPrefix))
+        .toList();
     for (final k in keys) {
       await prefs.remove(k);
     }
     await _loadSettings();
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Local CRM settings cache cleared')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Local CRM settings cache cleared')),
+    );
   }
 
   Future<void> _openPrivacyPolicy() async {
@@ -150,6 +166,15 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
                     },
                   ),
                   _ToggleTile(
+                    label: 'Real-time Sync',
+                    subtitle: 'Sync CRM data in the background',
+                    value: _realTimeSync,
+                    onChanged: (v) async {
+                      setState(() => _realTimeSync = v);
+                      await _saveBool('real_time_sync', v);
+                    },
+                  ),
+                  _ToggleTile(
                     label: 'Lead Assignment',
                     subtitle: 'Notify on new lead assigned',
                     value: _leadAssignment,
@@ -174,6 +199,16 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
                 icon: Icons.tune_rounded,
                 children: [
                   _DropdownTile(
+                    label: 'Pipeline View',
+                    value: _pipelineView,
+                    items: const ['Kanban', 'List'],
+                    onChanged: (v) async {
+                      if (v == null) return;
+                      setState(() => _pipelineView = v);
+                      await _saveString('pipeline_view', v);
+                    },
+                  ),
+                  _DropdownTile(
                     label: 'Currency',
                     value: _currency,
                     items: const ['USD', 'EUR', 'GBP', 'VND', 'JPY'],
@@ -191,6 +226,16 @@ class _CrmSettingsScreenState extends State<CrmSettingsScreen> {
                       if (v == null) return;
                       setState(() => _dateFormat = v);
                       await _saveString('date_format', v);
+                    },
+                  ),
+                  _DropdownTile(
+                    label: 'Sync Interval',
+                    value: _syncInterval,
+                    items: const ['15s', '30s', '1m', '5m'],
+                    onChanged: (v) async {
+                      if (v == null) return;
+                      setState(() => _syncInterval = v);
+                      await _saveString('sync_interval', v);
                     },
                   ),
                 ],

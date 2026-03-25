@@ -29,6 +29,22 @@ class AppRouter {
 
   AppRouter(this.authProvider);
 
+  int _pipelineInitialIndex(GoRouterState state) {
+    final tab = state.uri.queryParameters['tab'];
+    switch (tab) {
+      case 'contacts':
+        return 1;
+      case 'leads':
+        return 2;
+      case 'deals':
+        return 3;
+      case 'settings':
+        return 4;
+      default:
+        return 2;
+    }
+  }
+
   late final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     refreshListenable: authProvider,
@@ -66,7 +82,7 @@ class AppRouter {
         path: '/pipeline',
         pageBuilder: (context, state) => CustomTransitionPage<void>(
           key: state.pageKey,
-          child: const CrmShell(),
+          child: CrmShell(initialIndex: _pipelineInitialIndex(state)),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(
               opacity: CurveTween(curve: Curves.easeInOut).animate(animation),

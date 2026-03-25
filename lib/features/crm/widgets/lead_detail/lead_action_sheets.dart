@@ -114,7 +114,8 @@ class _LogNoteSheetState extends State<LogNoteSheet> {
                       if (text.isEmpty) return;
                       setState(() => _isLoading = true);
                       await widget.onLog(text);
-                      if (mounted) Navigator.pop(context);
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: LdToken.primary,
@@ -302,7 +303,8 @@ class _ScheduleActivitySheetState extends State<ScheduleActivitySheet> {
                           _noteCtrl.text.trim(),
                           _dueDate.toIso8601String().split('T')[0],
                         );
-                        if (mounted) Navigator.pop(context);
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop();
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: LdToken.primary,

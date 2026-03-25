@@ -29,9 +29,11 @@ class _AttachmentsSheetState extends State<AttachmentsSheet> {
   bool _isUploading = false;
 
   Future<void> _pickAndUpload() async {
+    final provider = context.read<CrmProvider>();
     final result = await FilePicker.platform.pickFiles();
 
     if (result != null && result.files.single.path != null) {
+      if (!context.mounted) return;
       setState(() => _isUploading = true);
       try {
         final file = File(result.files.single.path!);
@@ -39,7 +41,6 @@ class _AttachmentsSheetState extends State<AttachmentsSheet> {
         final base64String = base64Encode(bytes);
         final fileName = result.files.single.name;
 
-        final provider = context.read<CrmProvider>();
         final success = await provider.uploadAttachment(
           leadId: int.parse(widget.lead.id),
           fileName: fileName,
@@ -54,7 +55,7 @@ class _AttachmentsSheetState extends State<AttachmentsSheet> {
             );
           }
         } else {
-           if (mounted) {
+          if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Upload failed')),
             );

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import '../../../core/config/app_config.dart';
 import '../providers/auth_provider.dart';
 
 enum LoginStep { urlInput, credentials }
@@ -16,7 +17,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _urlController = TextEditingController(
-    text: 'dev-tascort-dms.tascoauto.com',
+    text: AppConfig.defaultServerUrl,
   );
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -31,6 +32,9 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+    if (AppConfig.defaultDatabase.isNotEmpty) {
+      _selectedDb = AppConfig.defaultDatabase;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
       if (authProvider.serverUrl != null &&
@@ -51,12 +55,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   String _formatUrl(String text) {
-    var url = text.trim();
-    if (url.isEmpty) return '';
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://$url';
-    }
-    return url.replaceAll(RegExp(r'/$'), '');
+    return AppConfig.normalizeServerUrl(text);
   }
 
   Future<void> _fetchDatabases() async {
@@ -96,6 +95,8 @@ class _LoginScreenState extends State<LoginScreen>
               _selectedDb = dbs.first;
             } else if (dbs.isNotEmpty) {
               _selectedDb = dbs.first; // Default to first if multiple
+            } else if (AppConfig.defaultDatabase.isNotEmpty) {
+              _selectedDb = AppConfig.defaultDatabase;
             }
             _currentStep = LoginStep.credentials;
             _isLoadingDb = false;
@@ -104,6 +105,9 @@ class _LoginScreenState extends State<LoginScreen>
         } else if (data['error'] != null) {
           // Access denied to list DBs or DB list disabled
           setState(() {
+            if (AppConfig.defaultDatabase.isNotEmpty) {
+              _selectedDb = AppConfig.defaultDatabase;
+            }
             _currentStep = LoginStep.credentials;
             _isLoadingDb = false;
           });
@@ -113,6 +117,9 @@ class _LoginScreenState extends State<LoginScreen>
 
       // Handle non-200 or unexpected structure
       setState(() {
+        if (AppConfig.defaultDatabase.isNotEmpty) {
+          _selectedDb = AppConfig.defaultDatabase;
+        }
         _currentStep = LoginStep.credentials;
         _isLoadingDb = false;
       });

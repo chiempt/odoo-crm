@@ -8,14 +8,16 @@ import 'create_lead_screen.dart';
 import 'create_contact_screen.dart';
 
 class CrmShell extends StatefulWidget {
-  const CrmShell({super.key});
+  final int initialIndex;
+
+  const CrmShell({super.key, this.initialIndex = 2});
 
   @override
   State<CrmShell> createState() => _CrmShellState();
 }
 
 class _CrmShellState extends State<CrmShell> {
-  int _currentIndex = 2; // Default to Leads (index 2)
+  late int _currentIndex;
 
   static const Color _primaryColor = Color(0xFF5a3d6a);
 
@@ -26,6 +28,18 @@ class _CrmShellState extends State<CrmShell> {
     const DealsScreen(),
     const CrmSettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialIndex < 0) {
+      _currentIndex = 0;
+    } else if (widget.initialIndex >= _screens.length) {
+      _currentIndex = _screens.length - 1;
+    } else {
+      _currentIndex = widget.initialIndex;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

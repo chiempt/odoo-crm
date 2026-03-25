@@ -1033,10 +1033,11 @@ class _MoreMenuSheet extends StatelessWidget {
                 if (context.mounted) {
                   Navigator.pop(context); // close sheet
                   Navigator.pop(context); // back to list
-                  if (success)
+                  if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Deal deleted')),
                     );
+                  }
                 }
               }
             },
