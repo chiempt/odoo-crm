@@ -20,6 +20,19 @@ Use `--dart-define` values at build/run time:
 - `ODOO_DEFAULT_DB`: default database when auto-listing DBs is disabled.
 - `ODOO_REQUIRE_HTTPS`: `true` by default. Set to `false` only for local/dev HTTP.
 
+## Production build (single mode)
+
+Use one standard release path (no flavor switching):
+
+```bash
+flutter build appbundle --release \
+  --obfuscate \
+  --split-debug-info=build/symbols \
+  --dart-define=ODOO_DEFAULT_URL=https://your-odoo.example.com \
+  --dart-define=ODOO_DEFAULT_DB=odoo_prod \
+  --dart-define=ODOO_REQUIRE_HTTPS=true
+```
+
 ## Integration and release docs
 
 - Odoo API integration details: [`ODOO_CRM_INTEGRATION.md`](./ODOO_CRM_INTEGRATION.md)

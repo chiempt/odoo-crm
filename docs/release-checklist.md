@@ -69,6 +69,21 @@ export ANDROID_RELEASE_KEY_PASSWORD='***'
 flutter build appbundle --release
 ```
 
+Production mode policy:
+
+- Use `--release` only.
+- Do not introduce build flavors unless there is a clear product requirement.
+- Prefer one canonical command for repeatability:
+
+```bash
+flutter build appbundle --release \
+  --obfuscate \
+  --split-debug-info=build/symbols \
+  --dart-define=ODOO_DEFAULT_URL=https://your-odoo.example.com \
+  --dart-define=ODOO_DEFAULT_DB=odoo_prod \
+  --dart-define=ODOO_REQUIRE_HTTPS=true
+```
+
 ## 6) Release operations
 
 - Tag release version (`pubspec.yaml`).
