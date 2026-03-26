@@ -32,11 +32,11 @@ class QuickActionsGrid extends StatelessWidget {
           children: [
             _buildActionCard(
               context,
-              'New Lead',
-              Icons.person_add_alt_1_rounded,
+              'Add New',
+              Icons.add_circle_rounded,
               const Color(0xFFE3F2FD),
               const Color(0xFF1976D2),
-              () => context.push('/crm/create-lead'),
+              () => _showAddNewSheet(context),
             ),
             _buildActionCard(
               context,
@@ -65,6 +65,119 @@ class QuickActionsGrid extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  Future<void> _showAddNewSheet(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Add New',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1D1B20),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Choose what you want to create from Home.',
+                  style: TextStyle(color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 16),
+                _buildAddNewOption(
+                  context: context,
+                  label: 'Lead',
+                  icon: Icons.person_add_alt_1_rounded,
+                  color: const Color(0xFF1976D2),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/crm/create-lead');
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildAddNewOption(
+                  context: context,
+                  label: 'Contact',
+                  icon: Icons.contacts_rounded,
+                  color: const Color(0xFF7E57C2),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/pipeline?tab=contacts');
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildAddNewOption(
+                  context: context,
+                  label: 'Deal',
+                  icon: Icons.handshake_rounded,
+                  color: const Color(0xFF16A34A),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/pipeline?tab=deals');
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAddNewOption({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D1B20),
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF)),
+          ],
+        ),
+      ),
     );
   }
 

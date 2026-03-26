@@ -144,6 +144,8 @@ class UpcomingActivitiesSection extends StatelessWidget {
                         Expanded(
                           child: Text(
                             activity.resName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -173,14 +175,7 @@ class UpcomingActivitiesSection extends StatelessWidget {
                     ),
                     if (activity.summary.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text(
-                        activity.summary,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF424242),
-                        ),
-                      ),
+                      _ExpandableActivitySummary(text: activity.summary),
                     ],
                     const SizedBox(height: 4),
                     Text(
@@ -223,6 +218,56 @@ class UpcomingActivitiesSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ExpandableActivitySummary extends StatefulWidget {
+  final String text;
+
+  const _ExpandableActivitySummary({required this.text});
+
+  @override
+  State<_ExpandableActivitySummary> createState() =>
+      _ExpandableActivitySummaryState();
+}
+
+class _ExpandableActivitySummaryState
+    extends State<_ExpandableActivitySummary> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final showToggle = widget.text.length > 90;
+    final maxLines = _expanded ? null : 2;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.text,
+          maxLines: maxLines,
+          overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF424242),
+          ),
+        ),
+        if (showToggle)
+          TextButton(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              _expanded ? 'Show less' : 'Show more',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+      ],
     );
   }
 }

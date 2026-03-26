@@ -11,17 +11,17 @@ import 'package:myapp/features/pipeline/providers/pipeline_provider.dart';
 import 'package:myapp/features/profile/providers/profile_provider.dart';
 
 void main() {
-  testWidgets(
-    'Main provider graph initializes without crashes',
-    (WidgetTester tester) async {
-      bool hasThemeProvider = false;
-      bool hasAuthProvider = false;
-      bool hasPipelineProvider = false;
-      bool hasCrmProvider = false;
-      bool hasDashboardProvider = false;
-      bool hasProfileProvider = false;
-      bool hasContactProvider = false;
-      bool hasSmartScanProvider = false;
+  testWidgets('Main provider graph initializes without crashes', (
+    WidgetTester tester,
+  ) async {
+    bool hasThemeProvider = false;
+    bool hasAuthProvider = false;
+    bool hasPipelineProvider = false;
+    bool hasCrmProvider = false;
+    bool hasDashboardProvider = false;
+    bool hasProfileProvider = false;
+    bool hasContactProvider = false;
+    bool hasSmartScanProvider = false;
 
     await tester.pumpWidget(
       MultiProvider(
@@ -93,16 +93,15 @@ void main() {
       ),
     );
 
-      await tester.pump();
+    await tester.pump();
 
-      expect(hasThemeProvider, isTrue);
-      expect(hasAuthProvider, isTrue);
-      expect(hasPipelineProvider, isTrue);
-      expect(hasCrmProvider, isTrue);
-      expect(hasDashboardProvider, isTrue);
-      expect(hasProfileProvider, isTrue);
-      expect(hasContactProvider, isTrue);
-      expect(hasSmartScanProvider, isTrue);
-    },
-  );
+    expect(hasThemeProvider, isTrue);
+    expect(hasAuthProvider, isTrue);
+    expect(hasPipelineProvider, isTrue);
+    expect(hasCrmProvider, isTrue);
+    expect(hasDashboardProvider, isTrue);
+    expect(hasProfileProvider, isTrue);
+    expect(hasContactProvider, isTrue);
+    expect(hasSmartScanProvider, isTrue);
+  });
 }

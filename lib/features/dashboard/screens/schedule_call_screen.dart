@@ -46,9 +46,9 @@ class _ScheduleCallScreenState extends State<ScheduleCallScreen> {
     } catch (e) {
       setState(() => _isLoadingLeads = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading leads: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading leads: $e')));
       }
     }
   }
@@ -78,7 +78,7 @@ class _ScheduleCallScreenState extends State<ScheduleCallScreen> {
         summary: _titleController.text,
         note: _notesController.text.isEmpty ? null : _notesController.text,
         dateDeadline: DateFormat('yyyy-MM-dd').format(dateTime),
-        activityTypeId: _activityType == 'call' ? 2 : 3, // 2=Call, 3=Meeting
+        activityTypeKey: _activityType,
       );
 
       if (mounted) {
@@ -89,9 +89,9 @@ class _ScheduleCallScreenState extends State<ScheduleCallScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -163,7 +163,9 @@ class _ScheduleCallScreenState extends State<ScheduleCallScreen> {
                           ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text(
                                 'Schedule Activity',
                                 style: TextStyle(

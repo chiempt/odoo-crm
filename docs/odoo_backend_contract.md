@@ -60,6 +60,8 @@ All CRUD/actions use:
 6. Attachments (`ir.attachment`)
    - `search_read`
    - `create` (base64 upload)
+   - `read` (base64 download payload)
+   - `unlink` (delete with record ownership check in app)
 7. Lookup/supporting records
    - `res.users.search_read`
    - `res.partner.search_read`
@@ -99,7 +101,7 @@ For mobile user role/group, grant model ACL + record rules for:
 - `mail.activity` (read/create/write for own activities)
 - `mail.message` (read/create via `message_post`)
 - `mail.followers` (read)
-- `ir.attachment` (read/create for linked `crm.lead`)
+- `ir.attachment` (read/create/unlink for linked `crm.lead`)
 - `res.users` (read basic fields)
 - `res.partner` (read; write optional)
 - `crm.tag`, `utm.source`, `utm.campaign` (read/create if app can create missing values)
@@ -114,48 +116,54 @@ For mobile user role/group, grant model ACL + record rules for:
 - Lead message post + timeline read
 - Follower list/add/remove
 - Attachment list/upload
+- Attachment download/delete
 - User/partner lookup
 
 ### Missing or risky for production mobile rollout
 
-1. Activity type mapping is hard-coded (`1/2/3`), not resolved dynamically
-   - risk: wrong IDs by database, language, or custom setup
-2. No dedicated mobile-safe backend adapter
+1. No dedicated mobile-safe backend adapter
    - risk: direct DB/login credentials in app, limited policy/observability/rate-limiting
-3. No explicit attachment download/delete contract
-   - app can list/upload only
-4. No contract test suite against target Odoo instance
+2. Attachment download/delete requires ACL alignment in staging/prod
+   - app now enforces record ownership (`res_model` + `res_id`) before read/unlink
+3. No contract test suite against target Odoo instance
    - failures will appear late during app QA
-5. No explicit permission bootstrap document/script
+4. No explicit permission bootstrap document/script
    - onboarding a new Odoo database is error-prone
-6. Session lifecycle handling is minimal (logout on expiry only)
+5. Session lifecycle handling is minimal (logout on expiry only)
    - no refresh/check endpoint strategy for proactive UX
 
 ## Recommended Implementation Tasks (with estimates)
 
-1. Dynamic activity type resolution
-   - Implement: read `mail.activity.type` by semantic key/name, cache per session, remove hard-coded IDs
-   - Estimate: 0.5 day
-2. Permission profile + setup script
+1. Permission profile + setup script
    - Implement: security checklist + optional XML/data script for required groups/ACL/rules
    - Estimate: 0.5 day
-3. Backend adapter facade (preferred for production)
+2. Backend adapter facade (preferred for production)
    - Implement: thin Odoo module/controller or gateway endpoint set for mobile operations
    - Benefits: hide DB auth details, centralized validation/logging/rate limits
    - Estimate: 2-3 days
-4. Attachment completion
-   - Implement: download + delete flows with size/type restrictions
+3. Attachment completion
+   - Implemented 2026-03-25: download + delete flows with record ownership checks
    - Estimate: 0.5-1 day
-5. Contract test pack
+4. Contract test pack
    - Implement: smoke tests for auth, lead CRUD, activities, followers, attachments against staging Odoo
    - Estimate: 1-1.5 days
-6. Session resilience
+5. Session resilience
    - Implement: explicit session check/re-auth UX path + retry guard for idempotent reads
    - Estimate: 0.5 day
 
-Total estimated effort: 5-7 days (single engineer), excluding deployment approvals.
+Total estimated effort: 4.5-6.5 days (single engineer), excluding deployment approvals.
+
+## Migration notes (ODO-33)
+
+- Date: 2026-03-25
+- `mail.activity` creation no longer uses hard-coded IDs (`1/2/3`).
+- Mobile client now resolves activity types from `mail.activity.type` by semantic key/name (`call`, `meeting`, `email`, `todo`) and caches the mapping in-session.
+- Existing create/edit flows remain compatible:
+  - explicit `activityTypeId` continues to work unchanged
+  - callers can pass `activityTypeKey` to resolve environment-specific IDs dynamically
+- If no semantic match exists, client falls back to the first available `mail.activity.type` by sequence.
 
 ## Decision
 
 Current contract is enough for internal demo/staging if Odoo modules/ACL are aligned.
-For business-ready rollout, prioritize tasks 1-3 first (activity IDs, ACL bootstrap, backend adapter facade).
+For business-ready rollout, prioritize tasks 1-3 first (ACL bootstrap, backend adapter facade, attachment completion).

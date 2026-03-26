@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
+import '../../../core/services/mobile_backend_adapter.dart';
 import '../providers/auth_provider.dart';
 
 enum LoginStep { urlInput, credentials }
@@ -16,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
+  final MobileBackendAdapter _backendAdapter = MobileBackendAdapter();
   final _urlController = TextEditingController(
     text: AppConfig.defaultServerUrl,
   );
@@ -71,53 +71,15 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _isLoadingDb = true);
 
     try {
-      final uri = Uri.parse('$formattedUrl/web/database/list');
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "jsonrpc": "2.0",
-          "method": "call",
-          "params": {},
-          "id": DateTime.now().millisecondsSinceEpoch,
-        }),
-      );
-
+      final dbs = await _backendAdapter.listDatabases(formattedUrl);
       if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['result'] != null && data['result'] is List) {
-          final dbs = List<String>.from(data['result']);
-          setState(() {
-            _availableDatabases = dbs;
-            if (dbs.length == 1) {
-              _selectedDb = dbs.first;
-            } else if (dbs.isNotEmpty) {
-              _selectedDb = dbs.first; // Default to first if multiple
-            } else if (AppConfig.defaultDatabase.isNotEmpty) {
-              _selectedDb = AppConfig.defaultDatabase;
-            }
-            _currentStep = LoginStep.credentials;
-            _isLoadingDb = false;
-          });
-          return;
-        } else if (data['error'] != null) {
-          // Access denied to list DBs or DB list disabled
-          setState(() {
-            if (AppConfig.defaultDatabase.isNotEmpty) {
-              _selectedDb = AppConfig.defaultDatabase;
-            }
-            _currentStep = LoginStep.credentials;
-            _isLoadingDb = false;
-          });
-          return;
-        }
-      }
-
-      // Handle non-200 or unexpected structure
       setState(() {
-        if (AppConfig.defaultDatabase.isNotEmpty) {
+        _availableDatabases = dbs;
+        if (dbs.length == 1) {
+          _selectedDb = dbs.first;
+        } else if (dbs.isNotEmpty) {
+          _selectedDb = dbs.first;
+        } else if (AppConfig.defaultDatabase.isNotEmpty) {
           _selectedDb = AppConfig.defaultDatabase;
         }
         _currentStep = LoginStep.credentials;
@@ -125,10 +87,13 @@ class _LoginScreenState extends State<LoginScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingDb = false);
-      _showErrorSnackBar(
-        'Could not connect to the server. Please check the URL.',
-      );
+      setState(() {
+        if (AppConfig.defaultDatabase.isNotEmpty) {
+          _selectedDb = AppConfig.defaultDatabase;
+        }
+        _currentStep = LoginStep.credentials;
+        _isLoadingDb = false;
+      });
     }
   }
 
@@ -139,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen>
       _passwordController.text,
       _urlController.text,
       _selectedDb ?? '',
+      rememberSession: _rememberMe,
     );
 
     if (!mounted) return;
@@ -162,8 +128,16 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authStatus = context.watch<AuthProvider>().status;
+    final authProvider = context.watch<AuthProvider>();
+    final authStatus = authProvider.status;
     final isAuthenticating = authStatus == AuthStatus.loading;
+    final pendingAuthMessage = authProvider.consumePendingAuthMessage();
+    if (pendingAuthMessage != null && pendingAuthMessage.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showErrorSnackBar(pendingAuthMessage);
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,

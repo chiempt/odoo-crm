@@ -18,7 +18,7 @@ class DealProvider with ChangeNotifier {
   /// Fetch all deals/opportunities from Odoo
   Future<void> fetchDeals({bool refresh = false}) async {
     if (_isLoading) return;
-    
+
     if (refresh) {
       _deals = [];
       _dealsByStage = {};
@@ -70,10 +70,7 @@ class DealProvider with ChangeNotifier {
           .map((json) => DealHistoryEntry.fromOdooMessage(json))
           .toList();
 
-      return deal.copyWithDetails(
-        activity: activity,
-        history: history,
-      );
+      return deal.copyWithDetails(activity: activity, history: history);
     } catch (e) {
       debugPrint('Error fetching deal details: $e');
       return null;
@@ -144,7 +141,10 @@ class DealProvider with ChangeNotifier {
   /// Mark deal as lost
   Future<bool> markAsLost(int dealId, {int? lostReasonId}) async {
     try {
-      final success = await _crmService.markAsLost(dealId, lostReasonId: lostReasonId);
+      final success = await _crmService.markAsLost(
+        dealId,
+        lostReasonId: lostReasonId,
+      );
       if (success) {
         await fetchDeals(refresh: true);
       }
@@ -163,6 +163,7 @@ class DealProvider with ChangeNotifier {
     String? note,
     required String dateDeadline,
     int? activityTypeId,
+    String? activityTypeKey,
   }) async {
     try {
       await _crmService.createActivity(
@@ -171,6 +172,7 @@ class DealProvider with ChangeNotifier {
         note: note,
         dateDeadline: dateDeadline,
         activityTypeId: activityTypeId,
+        activityTypeKey: activityTypeKey,
       );
       return true;
     } catch (e) {
@@ -181,15 +183,9 @@ class DealProvider with ChangeNotifier {
   }
 
   /// Post a message/note to a deal
-  Future<bool> postMessage({
-    required int dealId,
-    required String body,
-  }) async {
+  Future<bool> postMessage({required int dealId, required String body}) async {
     try {
-      await _crmService.postMessage(
-        leadId: dealId,
-        body: body,
-      );
+      await _crmService.postMessage(leadId: dealId, body: body);
       return true;
     } catch (e) {
       _error = e.toString();
@@ -217,7 +213,7 @@ class DealProvider with ChangeNotifier {
   /// Search deals
   List<Deal> searchDeals(String query) {
     if (query.isEmpty) return _deals;
-    
+
     final lowerQuery = query.toLowerCase();
     return _deals.where((deal) {
       return deal.title.toLowerCase().contains(lowerQuery) ||
@@ -229,9 +225,8 @@ class DealProvider with ChangeNotifier {
   /// Get total revenue
   double getTotalRevenue() {
     return _deals.fold(0.0, (sum, deal) {
-      final value = double.tryParse(
-        deal.value.replaceAll(RegExp(r'[^\d.]'), ''),
-      ) ?? 0.0;
+      final value =
+          double.tryParse(deal.value.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
       return sum + value;
     });
   }

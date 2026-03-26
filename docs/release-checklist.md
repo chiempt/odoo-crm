@@ -13,7 +13,7 @@
   - read/write leads
   - schedule activities
   - post chatter notes
-  - upload attachments
+  - upload/download/delete attachments
 
 ## 2) App env config
 
@@ -37,6 +37,7 @@ flutter run \
 - Move lead through pipeline stage.
 - Create activity and message note.
 - Upload one attachment.
+- Download and delete one attachment.
 - Open profile/settings and logout/login again (session persistence).
 
 ## 4) Quality gates
@@ -45,21 +46,44 @@ flutter run \
 - `flutter test`
 - Verify no crash on cold start and relaunch.
 
-## 5) Release operations
+## 5) Android release identity & signing (required for Play Store)
+
+- Production Android identifier:
+  - `namespace`: `com.chiempt.odoocrm`
+  - `applicationId`: `com.chiempt.odoocrm`
+- Release builds require signing values from environment variables (or equivalent Gradle properties):
+  - `ANDROID_RELEASE_STORE_FILE`
+  - `ANDROID_RELEASE_STORE_PASSWORD`
+  - `ANDROID_RELEASE_KEY_ALIAS`
+  - `ANDROID_RELEASE_KEY_PASSWORD`
+- Do not use debug signing for production. The build is configured to fail for release tasks when any signing value is missing.
+
+Example local release command:
+
+```bash
+export ANDROID_RELEASE_STORE_FILE=/absolute/path/to/upload-keystore.jks
+export ANDROID_RELEASE_STORE_PASSWORD='***'
+export ANDROID_RELEASE_KEY_ALIAS='upload'
+export ANDROID_RELEASE_KEY_PASSWORD='***'
+
+flutter build appbundle --release
+```
+
+## 6) Release operations
 
 - Tag release version (`pubspec.yaml`).
 - Build artifact:
-  - Android: `flutter build apk --release`
+  - Android: `flutter build appbundle --release`
   - iOS: `flutter build ios --release`
 - Publish internal changelog with known limitations.
 
-## 6) Rollback plan
+## 7) Rollback plan
 
 - Keep previous stable app binary available.
 - Keep previous API/base URL settings documented.
 - If severe auth/API regression appears, rollback app build first, then investigate server-side changes.
 
-## 7) Go/No-Go sign-off
+## 8) Go/No-Go sign-off
 
 - Final release decision document: `docs/go-no-go.md`.
 - Staging/demo can proceed when sections 1-5 are green.

@@ -25,3 +25,4 @@ Use `--dart-define` values at build/run time:
 - Odoo API integration details: [`ODOO_CRM_INTEGRATION.md`](./ODOO_CRM_INTEGRATION.md)
 - Launch checklist: [`docs/release-checklist.md`](./docs/release-checklist.md)
 - Go/No-Go recommendation: [`docs/go-no-go.md`](./docs/go-no-go.md)
+- Staging contract smoke tests: [`docs/staging-contract-smoke.md`](./docs/staging-contract-smoke.md)

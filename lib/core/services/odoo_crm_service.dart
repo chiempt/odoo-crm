@@ -1,19 +1,82 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+
 import 'api_service.dart';
 import 'auth_service.dart';
 
+typedef OdooRpcCall =
+    Future<dynamic> Function(
+      String path, {
+      required String method,
+      required Map<String, dynamic> params,
+    });
+
+typedef StringAuthGetter = Future<String?> Function();
+typedef IntAuthGetter = Future<int?> Function();
+
+class AttachmentDownloadResult {
+  final String fileName;
+  final String? mimetype;
+  final Uint8List bytes;
+
+  const AttachmentDownloadResult({
+    required this.fileName,
+    required this.bytes,
+    this.mimetype,
+  });
+}
+
 /// Service for Odoo CRM Lead/Opportunity operations using JSON-RPC 2.0
 class OdooCrmService {
-  final ApiService _apiService = ApiService();
-  final AuthService _authService = AuthService();
+  final OdooRpcCall _rpcCall;
+  final StringAuthGetter _getDatabase;
+  final IntAuthGetter _getUid;
+  final StringAuthGetter _getToken;
+  final Map<String, int> _activityTypeIdCache = {};
+
+  static const Map<String, List<String>> _activityTypeNameCandidates = {
+    'call': ['call', 'phone call'],
+    'meeting': ['meeting'],
+    'email': ['email'],
+    'todo': ['to do', 'todo'],
+  };
 
   static final OdooCrmService _instance = OdooCrmService._internal();
   factory OdooCrmService() => _instance;
-  OdooCrmService._internal();
+  OdooCrmService._internal({
+    OdooRpcCall? rpcCall,
+    StringAuthGetter? getDatabase,
+    IntAuthGetter? getUid,
+    StringAuthGetter? getToken,
+  }) : _rpcCall =
+           rpcCall ??
+           ((path, {required method, required params}) {
+             return ApiService().call(path, method: method, params: params);
+           }),
+       _getDatabase = getDatabase ?? AuthService().getDatabase,
+       _getUid = getUid ?? AuthService().getUid,
+       _getToken = getToken ?? AuthService().getToken;
+
+  @visibleForTesting
+  factory OdooCrmService.test({
+    required OdooRpcCall rpcCall,
+    required StringAuthGetter getDatabase,
+    required IntAuthGetter getUid,
+    required StringAuthGetter getToken,
+  }) {
+    return OdooCrmService._internal(
+      rpcCall: rpcCall,
+      getDatabase: getDatabase,
+      getUid: getUid,
+      getToken: getToken,
+    );
+  }
 
   Future<void> _ensureAuthenticated() async {
-    final db = await _authService.getDatabase();
-    final uid = await _authService.getUid();
-    final token = await _authService.getToken();
+    final db = await _getDatabase();
+    final uid = await _getUid();
+    final token = await _getToken();
 
     if (db == null || uid == null || token == null) {
       throw Exception('Not authenticated');
@@ -29,7 +92,7 @@ class OdooCrmService {
   }) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -54,7 +117,7 @@ class OdooCrmService {
   }) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -108,15 +171,13 @@ class OdooCrmService {
   }) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
         'model': 'crm.lead',
         'method': 'search_read',
-        'args': [
-          domain ?? [],
-        ],
+        'args': [domain ?? []],
         'kwargs': {
           'fields': fields ?? _defaultLeadFields,
           'limit': limit ?? 100,
@@ -134,7 +195,7 @@ class OdooCrmService {
   Future<Map<String, dynamic>?> fetchLeadById(int id) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -143,9 +204,7 @@ class OdooCrmService {
         'args': [
           [id],
         ],
-        'kwargs': {
-          'fields': _detailLeadFields,
-        },
+        'kwargs': {'fields': _detailLeadFields},
       },
     );
 
@@ -158,7 +217,7 @@ class OdooCrmService {
   Future<int> createLead(Map<String, dynamic> values) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -176,7 +235,7 @@ class OdooCrmService {
   Future<bool> updateLead(int id, Map<String, dynamic> values) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -197,7 +256,7 @@ class OdooCrmService {
   Future<bool> deleteLead(int id) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -217,15 +276,13 @@ class OdooCrmService {
   Future<List<Map<String, dynamic>>> fetchStages() async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
         'model': 'crm.stage',
         'method': 'search_read',
-        'args': [
-          [],
-        ],
+        'args': [[]],
         'kwargs': {
           'fields': ['id', 'name', 'sequence', 'fold', 'probability'],
           'order': 'sequence asc',
@@ -241,7 +298,7 @@ class OdooCrmService {
   Future<List<Map<String, dynamic>>> fetchActivities(int leadId) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -276,7 +333,7 @@ class OdooCrmService {
   Future<List<Map<String, dynamic>>> fetchMessages(int leadId) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -314,14 +371,19 @@ class OdooCrmService {
     String? note,
     required String dateDeadline,
     int? activityTypeId,
+    String? activityTypeKey,
   }) async {
     await _ensureAuthenticated();
-    final uid = await _authService.getUid();
+    final uid = await _getUid();
     if (uid == null) {
       throw Exception('Not authenticated');
     }
+    final resolvedActivityTypeId = await _resolveActivityTypeId(
+      explicitId: activityTypeId,
+      semanticKey: activityTypeKey,
+    );
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -334,15 +396,77 @@ class OdooCrmService {
             'summary': summary,
             'note': note,
             'date_deadline': dateDeadline,
-            'activity_type_id': activityTypeId ?? 1, // Default activity type
+            'activity_type_id': resolvedActivityTypeId,
             'user_id': uid,
-          }
+          },
         ],
         'kwargs': {},
       },
     );
 
     return result is int ? result : 0;
+  }
+
+  Future<int> _resolveActivityTypeId({
+    int? explicitId,
+    String? semanticKey,
+  }) async {
+    if (explicitId != null && explicitId > 0) {
+      return explicitId;
+    }
+
+    final key = (semanticKey?.trim().toLowerCase() ?? 'todo');
+    final normalizedKey = key.isEmpty ? 'todo' : key;
+
+    final cached = _activityTypeIdCache[normalizedKey];
+    if (cached != null) {
+      return cached;
+    }
+
+    final candidates = [
+      ...?_activityTypeNameCandidates[normalizedKey],
+      if (normalizedKey != 'todo') ...?_activityTypeNameCandidates['todo'],
+    ];
+
+    for (final candidate in candidates) {
+      final found = await _findActivityTypeIdByName(candidate);
+      if (found != null) {
+        _activityTypeIdCache[normalizedKey] = found;
+        return found;
+      }
+    }
+
+    final fallback = await _searchRead(
+      model: 'mail.activity.type',
+      domain: [],
+      fields: ['id'],
+      limit: 1,
+      order: 'sequence asc, id asc',
+    );
+    if (fallback.isNotEmpty && fallback.first['id'] is int) {
+      final id = fallback.first['id'] as int;
+      _activityTypeIdCache[normalizedKey] = id;
+      return id;
+    }
+
+    throw Exception('No activity type is available in Odoo.');
+  }
+
+  Future<int?> _findActivityTypeIdByName(String name) async {
+    final rows = await _searchRead(
+      model: 'mail.activity.type',
+      domain: [
+        ['name', '=ilike', name],
+      ],
+      fields: ['id'],
+      limit: 1,
+      order: 'sequence asc, id asc',
+    );
+
+    if (rows.isNotEmpty && rows.first['id'] is int) {
+      return rows.first['id'] as int;
+    }
+    return null;
   }
 
   /// Post a message/note to a lead
@@ -353,7 +477,7 @@ class OdooCrmService {
   }) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -362,10 +486,7 @@ class OdooCrmService {
         'args': [
           [leadId],
         ],
-        'kwargs': {
-          'body': body,
-          'message_type': messageType,
-        },
+        'kwargs': {'body': body, 'message_type': messageType},
       },
     );
 
@@ -376,7 +497,7 @@ class OdooCrmService {
   Future<bool> convertToOpportunity(int leadId) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -385,9 +506,7 @@ class OdooCrmService {
         'args': [
           [leadId],
         ],
-        'kwargs': {
-          'partner_id': false,
-        },
+        'kwargs': {'partner_id': false},
       },
     );
 
@@ -398,7 +517,7 @@ class OdooCrmService {
   Future<bool> markAsWon(int leadId) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -418,7 +537,7 @@ class OdooCrmService {
   Future<bool> markAsLost(int leadId, {int? lostReasonId}) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -427,9 +546,7 @@ class OdooCrmService {
         'args': [
           [leadId],
         ],
-        'kwargs': {
-          if (lostReasonId != null) 'lost_reason_id': lostReasonId,
-        },
+        'kwargs': {if (lostReasonId != null) 'lost_reason_id': lostReasonId},
       },
     );
 
@@ -437,10 +554,13 @@ class OdooCrmService {
   }
 
   /// Fetch followers for a record
-  Future<List<Map<String, dynamic>>> fetchFollowers(int resId, String resModel) async {
+  Future<List<Map<String, dynamic>>> fetchFollowers(
+    int resId,
+    String resModel,
+  ) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -463,10 +583,14 @@ class OdooCrmService {
   }
 
   /// Add a follower to a record
-  Future<bool> addFollower(int resId, String resModel, List<int> partnerIds) async {
+  Future<bool> addFollower(
+    int resId,
+    String resModel,
+    List<int> partnerIds,
+  ) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -484,10 +608,14 @@ class OdooCrmService {
   }
 
   /// Remove a follower from a record
-  Future<bool> removeFollower(int resId, String resModel, List<int> partnerIds) async {
+  Future<bool> removeFollower(
+    int resId,
+    String resModel,
+    List<int> partnerIds,
+  ) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -505,10 +633,13 @@ class OdooCrmService {
   }
 
   /// Fetch attachments for a record
-  Future<List<Map<String, dynamic>>> fetchAttachments(int resId, String resModel) async {
+  Future<List<Map<String, dynamic>>> fetchAttachments(
+    int resId,
+    String resModel,
+  ) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -540,7 +671,7 @@ class OdooCrmService {
   }) async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -553,7 +684,7 @@ class OdooCrmService {
             'res_model': resModel,
             'res_id': resId,
             'type': 'binary',
-          }
+          },
         ],
         'kwargs': {},
       },
@@ -562,11 +693,94 @@ class OdooCrmService {
     return result is int ? result : 0;
   }
 
+  Future<Map<String, dynamic>?> _fetchAttachmentForRecord({
+    required int attachmentId,
+    required int resId,
+    required String resModel,
+    required List<String> fields,
+  }) async {
+    final records = await _searchRead(
+      model: 'ir.attachment',
+      domain: [
+        ['id', '=', attachmentId],
+        ['res_model', '=', resModel],
+        ['res_id', '=', resId],
+      ],
+      fields: fields,
+      limit: 1,
+    );
+
+    return records.isEmpty ? null : records.first;
+  }
+
+  /// Download an attachment for a given record.
+  ///
+  /// Access is validated against record ownership via res_model/res_id.
+  Future<AttachmentDownloadResult> downloadAttachment({
+    required int attachmentId,
+    required int resId,
+    required String resModel,
+  }) async {
+    final record = await _fetchAttachmentForRecord(
+      attachmentId: attachmentId,
+      resId: resId,
+      resModel: resModel,
+      fields: ['id', 'name', 'mimetype', 'datas'],
+    );
+    if (record == null) {
+      throw Exception('Attachment not found or access denied.');
+    }
+
+    final datas = record['datas'];
+    if (datas is! String || datas.isEmpty) {
+      throw Exception('Attachment data is empty.');
+    }
+
+    final normalized = base64.normalize(datas);
+    return AttachmentDownloadResult(
+      fileName: record['name']?.toString() ?? 'attachment-$attachmentId',
+      mimetype: record['mimetype']?.toString(),
+      bytes: base64Decode(normalized),
+    );
+  }
+
+  /// Delete an attachment after validating it belongs to the given record.
+  Future<bool> deleteAttachment({
+    required int attachmentId,
+    required int resId,
+    required String resModel,
+  }) async {
+    final record = await _fetchAttachmentForRecord(
+      attachmentId: attachmentId,
+      resId: resId,
+      resModel: resModel,
+      fields: ['id'],
+    );
+    if (record == null) {
+      throw Exception('Attachment not found or access denied.');
+    }
+
+    final result = await _rpcCall(
+      '/web/dataset/call_kw',
+      method: 'call',
+      params: {
+        'model': 'ir.attachment',
+        'method': 'unlink',
+        'args': [
+          [attachmentId],
+        ],
+        'kwargs': {},
+      },
+    );
+
+    return result == true;
+  }
+
   /// Fetch users (salespeople)
   Future<List<Map<String, dynamic>>> fetchUsers() async {
     await _ensureAuthenticated();
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {
@@ -604,7 +818,7 @@ class OdooCrmService {
       ];
     }
 
-    final result = await _apiService.call(
+    final result = await _rpcCall(
       '/web/dataset/call_kw',
       method: 'call',
       params: {

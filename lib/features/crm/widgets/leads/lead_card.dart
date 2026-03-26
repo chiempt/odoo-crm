@@ -6,11 +6,7 @@ class LeadCard extends StatelessWidget {
   final Lead lead;
   final VoidCallback onTap;
 
-  const LeadCard({
-    super.key,
-    required this.lead,
-    required this.onTap,
-  });
+  const LeadCard({super.key, required this.lead, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +45,8 @@ class LeadCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       lead.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -59,7 +57,9 @@ class LeadCard extends StatelessWidget {
                   ),
                   if (lead.tag != null) ...[
                     const SizedBox(width: 8),
-                    _TagChip(label: lead.tag!, color: tagColor),
+                    Flexible(
+                      child: _TagChip(label: lead.tag!, color: tagColor),
+                    ),
                   ],
                   const SizedBox(width: 8),
                   Column(
@@ -103,12 +103,16 @@ class LeadCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    lead.assignee,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF555555),
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      lead.assignee,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF555555),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -120,6 +124,7 @@ class LeadCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       lead.company,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
@@ -134,37 +139,48 @@ class LeadCard extends StatelessWidget {
               const Divider(height: 1, color: Color(0xFFF0F0F0)),
               const SizedBox(height: 8),
 
-              // Row 3: Stars + Stage + Due + Actions
+              // Row 3: Stage metadata + actions
               Row(
                 children: [
-                  _StarRating(stars: lead.stars),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '•',
-                    style: TextStyle(color: Color(0xFFCCCCCC), fontSize: 12),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Stage: ${lead.stageLabel}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF777777),
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        _StarRating(stars: lead.stars),
+                        const Text(
+                          '•',
+                          style: TextStyle(
+                            color: Color(0xFFCCCCCC),
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'Stage: ${lead.stageLabel}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF777777),
+                          ),
+                        ),
+                        const Text(
+                          '•',
+                          style: TextStyle(
+                            color: Color(0xFFCCCCCC),
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'Due: ${lead.dueDate}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF777777),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    '•',
-                    style: TextStyle(color: Color(0xFFCCCCCC), fontSize: 12),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Due: ${lead.dueDate}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF777777),
-                    ),
-                  ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   _ActionButton(
                     icon: Icons.phone_outlined,
                     bgColor: const Color(0xFFF0F0F0),
@@ -205,9 +221,9 @@ class LeadCard extends StatelessWidget {
   }) async {
     final normalized = value.trim();
     if (normalized.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(emptyMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(emptyMessage)));
       return;
     }
 
@@ -218,9 +234,9 @@ class LeadCard extends StatelessWidget {
     }
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Unable to open $scheme action')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Unable to open $scheme action')));
   }
 }
 
@@ -239,6 +255,8 @@ class _TagChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 10,
@@ -258,13 +276,15 @@ class _StarRating extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < stars ? Icons.star_rounded : Icons.star_outline_rounded,
-          size: 14,
-          color: index < stars
-              ? const Color(0xFFFFA726)
-              : const Color(0xFFCCCCCC),
+      children: List.generate(5, (i) {
+        final filled = i < stars;
+        return Padding(
+          padding: const EdgeInsets.only(right: 1.5),
+          child: Icon(
+            filled ? Icons.star_rounded : Icons.star_border_rounded,
+            size: 13,
+            color: filled ? const Color(0xFFFFC107) : const Color(0xFFDDDDDD),
+          ),
         );
       }),
     );
@@ -286,16 +306,17 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
+      borderRadius: BorderRadius.circular(8),
+      child: Ink(
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 16, color: iconColor),
+        child: Icon(icon, size: 15, color: iconColor),
       ),
     );
   }

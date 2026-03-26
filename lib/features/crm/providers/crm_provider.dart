@@ -274,7 +274,9 @@ class CrmProvider with ChangeNotifier {
       if (record != null) {
         // Map Timeline from Messages
         final timelineEntries = messages.map((m) {
-          final author = m['author_id'] is List ? m['author_id'][1].toString() : 'System';
+          final author = m['author_id'] is List
+              ? m['author_id'][1].toString()
+              : 'System';
           return LeadTimelineEntry(
             description: _stripHtml(m['body']?.toString() ?? 'No content'),
             timeAgo: m['date']?.toString().split('.')[0] ?? '',
@@ -285,18 +287,27 @@ class CrmProvider with ChangeNotifier {
 
         // Map Notes also from Messages
         final notes = messages
-            .where((m) => m['message_type'] == 'comment' || m['message_type'] == 'notification')
+            .where(
+              (m) =>
+                  m['message_type'] == 'comment' ||
+                  m['message_type'] == 'notification',
+            )
             .map((m) {
-          final author = m['author_id'] is List ? m['author_id'][1].toString() : 'System';
-          return NoteEntry(
-            type: m['message_type'] == 'comment' ? 'NOTE' : 'SYSTEM',
-            content: _stripHtml(m['body']?.toString() ?? ''),
-            timeAgo: m['date']?.toString().split('.')[0] ?? '',
-            author: author,
-            icon: m['message_type'] == 'comment' ? Icons.description_outlined : Icons.info_outline,
-            iconBgColor: const Color(0xFFFFF8E1),
-          );
-        }).toList();
+              final author = m['author_id'] is List
+                  ? m['author_id'][1].toString()
+                  : 'System';
+              return NoteEntry(
+                type: m['message_type'] == 'comment' ? 'NOTE' : 'SYSTEM',
+                content: _stripHtml(m['body']?.toString() ?? ''),
+                timeAgo: m['date']?.toString().split('.')[0] ?? '',
+                author: author,
+                icon: m['message_type'] == 'comment'
+                    ? Icons.description_outlined
+                    : Icons.info_outline,
+                iconBgColor: const Color(0xFFFFF8E1),
+              );
+            })
+            .toList();
 
         // Map Scheduled Activities
         final scheduled = activities.map((a) {
@@ -502,6 +513,7 @@ class CrmProvider with ChangeNotifier {
     String? note,
     required String dateDeadline,
     int? activityTypeId,
+    String? activityTypeKey,
   }) async {
     try {
       final actId = await _crmService.createActivity(
@@ -510,6 +522,7 @@ class CrmProvider with ChangeNotifier {
         note: note,
         dateDeadline: dateDeadline,
         activityTypeId: activityTypeId,
+        activityTypeKey: activityTypeKey,
       );
       return actId > 0;
     } catch (e) {
@@ -551,6 +564,42 @@ class CrmProvider with ChangeNotifier {
       return attrId > 0;
     } catch (e) {
       debugPrint('Upload attachment error: $e');
+      return false;
+    }
+  }
+
+  Future<AttachmentDownloadResult?> downloadAttachment({
+    required int leadId,
+    required int attachmentId,
+  }) async {
+    try {
+      return await _crmService.downloadAttachment(
+        attachmentId: attachmentId,
+        resId: leadId,
+        resModel: 'crm.lead',
+      );
+    } catch (e) {
+      debugPrint('Download attachment error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> deleteAttachment({
+    required int leadId,
+    required int attachmentId,
+  }) async {
+    try {
+      final success = await _crmService.deleteAttachment(
+        attachmentId: attachmentId,
+        resId: leadId,
+        resModel: 'crm.lead',
+      );
+      if (success) {
+        await fetchLeadById(leadId);
+      }
+      return success;
+    } catch (e) {
+      debugPrint('Delete attachment error: $e');
       return false;
     }
   }

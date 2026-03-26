@@ -7,6 +7,8 @@ class AuthService {
   static const String _uidKey = 'user_id';
   static const String _nameKey = 'user_name';
   static const String _usernameKey = 'user_username';
+  static const String _rememberSessionKey = 'remember_session';
+  static const String _passwordKey = 'user_password';
 
   Future<void> saveAuthData({
     required String token,
@@ -15,11 +17,14 @@ class AuthService {
     int? uid,
     String? name,
     String? username,
+    String? password,
+    bool rememberSession = false,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_urlKey, url);
     await prefs.setString(_dbKey, database);
+    await prefs.setBool(_rememberSessionKey, rememberSession);
 
     if (uid != null) {
       await prefs.setInt(_uidKey, uid);
@@ -29,6 +34,11 @@ class AuthService {
     }
     if (username != null) {
       await prefs.setString(_usernameKey, username);
+    }
+    if (rememberSession && password != null && password.isNotEmpty) {
+      await prefs.setString(_passwordKey, password);
+    } else {
+      await prefs.remove(_passwordKey);
     }
   }
 
@@ -67,12 +77,23 @@ class AuthService {
     return prefs.getString(_usernameKey);
   }
 
+  Future<bool> getRememberSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_rememberSessionKey) ?? false;
+  }
+
+  Future<String?> getSavedPassword() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_passwordKey);
+  }
+
   Future<void> removeAuthData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_uidKey);
     await prefs.remove(_nameKey);
     await prefs.remove(_usernameKey);
+    await prefs.remove(_passwordKey);
     // Keep the default URL and Database so they don't have to be entered next time
   }
 

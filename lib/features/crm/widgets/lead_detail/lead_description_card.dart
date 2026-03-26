@@ -14,20 +14,73 @@ class LeadDescriptionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            lead.description,
-            style: const TextStyle(
-              fontSize: 14,
-              color: LdToken.textMed,
-              height: 1.55,
+          _CollapsibleLeadDescription(text: lead.description),
+          if (lead.keyRequirements.length > 3) ...[
+            const SizedBox(height: 10),
+            Text(
+              '${lead.keyRequirements.length} requirements',
+              style: const TextStyle(fontSize: 12, color: LdToken.textLow),
             ),
-          ),
+          ],
           if (lead.keyRequirements.isNotEmpty) ...[
             const SizedBox(height: 14),
             _KeyRequirementsBox(items: lead.keyRequirements),
           ],
         ],
       ),
+    );
+  }
+}
+
+class _CollapsibleLeadDescription extends StatefulWidget {
+  final String text;
+
+  const _CollapsibleLeadDescription({required this.text});
+
+  @override
+  State<_CollapsibleLeadDescription> createState() =>
+      _CollapsibleLeadDescriptionState();
+}
+
+class _CollapsibleLeadDescriptionState
+    extends State<_CollapsibleLeadDescription> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final showToggle = widget.text.length > 180;
+    final maxLines = _expanded ? null : 4;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.text,
+          maxLines: maxLines,
+          overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 14,
+            color: LdToken.textMed,
+            height: 1.55,
+          ),
+        ),
+        if (showToggle)
+          TextButton(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              _expanded ? 'Show less' : 'Show more',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: LdToken.primary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
